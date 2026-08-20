@@ -1,0 +1,10 @@
+# Upstream downloads and local Arch build artifacts
+/*.deb
+/upstream/
+/src/
+/pkg/
+/dist/
+
+# makepkg working files
+/*.log
+/*.part

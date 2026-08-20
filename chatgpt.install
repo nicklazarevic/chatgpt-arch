@@ -1,0 +1,24 @@
+_profile='/etc/apparmor.d/chatgpt'
+
+_apparmor_enabled() {
+  command -v aa-enabled >/dev/null 2>&1 &&
+    command -v apparmor_parser >/dev/null 2>&1 &&
+    aa-enabled --quiet
+}
+
+post_install() {
+  if _apparmor_enabled && [ -f /etc/apparmor.d/abi/4.0 ]; then
+    apparmor_parser -r -W -T "${_profile}" ||
+      printf 'warning: could not load the optional ChatGPT AppArmor profile\n' >&2
+  fi
+}
+
+post_upgrade() {
+  post_install
+}
+
+pre_remove() {
+  if _apparmor_enabled && [ -f /etc/apparmor.d/abi/4.0 ]; then
+    apparmor_parser -R "${_profile}" >/dev/null 2>&1 || true
+  fi
+}
