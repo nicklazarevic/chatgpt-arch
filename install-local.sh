@@ -158,6 +158,7 @@ if [ "${script_dir}" = '/usr/lib/chatgpt-arch-updater' ]; then
   mkdir -p "${build_dir}"
   install -m755 "${script_dir}/install-local.sh" "${build_dir}/install-local.sh"
   install -m755 "${script_dir}/launch-update-check.sh" "${build_dir}/launch-update-check.sh"
+  install -m755 "${script_dir}/chatgpt-launcher.sh" "${build_dir}/chatgpt-launcher.sh"
   install -m644 "${script_dir}/PKGBUILD" "${build_dir}/PKGBUILD"
   install -m644 "${script_dir}/chatgpt.install" "${build_dir}/chatgpt.install"
   install -m644 "${script_dir}/openai-codex-linux-repository.asc" \

@@ -48,7 +48,8 @@ show_error() {
 show_success() {
   message=$1
   if command -v kdialog >/dev/null 2>&1; then
-    kdialog --title 'ChatGPT Update Complete' --msgbox "${message}" || true
+    kdialog --title 'ChatGPT Update Complete' --icon chatgpt \
+      --passivepopup "${message}" 8 || true
   elif command -v zenity >/dev/null 2>&1; then
     zenity --info --title='ChatGPT Update Complete' --no-markup \
       --text="${message}" || true

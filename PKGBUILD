@@ -100,6 +100,8 @@ package() {
   rm -f "${pkgdir}/usr/bin/chatgpt"
   install -Dm755 "${startdir}/chatgpt-launcher.sh" \
     "${pkgdir}/usr/bin/chatgpt"
+  install -Dm755 "${startdir}/chatgpt-launcher.sh" \
+    "${pkgdir}/usr/lib/chatgpt-arch-updater/chatgpt-launcher.sh"
 
   install -Dm755 "${startdir}/install-local.sh" \
     "${pkgdir}/usr/lib/chatgpt-arch-updater/install-local.sh"
