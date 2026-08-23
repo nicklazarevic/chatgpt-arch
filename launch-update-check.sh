@@ -10,12 +10,70 @@ data_dir=${CHATGPT_UPDATER_DATA_DIR:-"${HOME}/.local/share/chatgpt-arch-updater"
 runtime_dir=${XDG_RUNTIME_DIR:-"/tmp"}
 lock_file="${runtime_dir}/chatgpt-arch-update-check-$(id -u).lock"
 lock_held=no
+progress_kind=''
+progress_service=''
+progress_path=''
+progress_pid=''
+build_log=''
+
+stop_progress() {
+  case "${progress_kind}" in
+    kdialog)
+      qdbus6 "${progress_service}" "${progress_path}" close \
+        >/dev/null 2>&1 || true
+      ;;
+    zenity)
+      kill "${progress_pid}" >/dev/null 2>&1 || true
+      wait "${progress_pid}" 2>/dev/null || true
+      ;;
+  esac
+  progress_kind=''
+  progress_service=''
+  progress_path=''
+  progress_pid=''
+}
 
 cleanup() {
+  stop_progress
+  if [ -n "${build_log}" ]; then
+    rm -f -- "${build_log}"
+    build_log=''
+  fi
   if [ "${lock_held}" = yes ]; then
     flock -u 9 >/dev/null 2>&1 || true
     exec 9>&-
     lock_held=no
+  fi
+}
+
+start_progress() {
+  progress_message='Downloading, verifying, and preparing the ChatGPT update...'
+
+  if command -v kdialog >/dev/null 2>&1 &&
+    command -v qdbus6 >/dev/null 2>&1; then
+    progress_ref=$(kdialog --title 'ChatGPT Update' --icon chatgpt \
+      --progressbar "${progress_message}" 0 2>/dev/null || true)
+    case "${progress_ref}" in
+      *' '*)
+        progress_service=${progress_ref%% *}
+        progress_path=${progress_ref#* }
+        progress_kind=kdialog
+        return
+        ;;
+    esac
+  fi
+
+  if command -v zenity >/dev/null 2>&1; then
+    (
+      while :; do
+        printf '# %s\n' "${progress_message}"
+        sleep 5
+      done
+    ) | zenity --progress --title='ChatGPT Update' --icon-name=chatgpt \
+      --pulsate --no-cancel --auto-close --no-markup \
+      --text="${progress_message}" >/dev/null 2>&1 &
+    progress_pid=$!
+    progress_kind=zenity
   fi
 }
 
@@ -114,12 +172,19 @@ if ! ask_to_update "${dialog_message}"; then
   launch_chatgpt "$@"
 fi
 
-if command -v kdialog >/dev/null 2>&1; then
-  kdialog --title 'ChatGPT Update' --icon chatgpt \
-    --passivepopup 'Downloading and preparing the update…' 5 || true
+build_log=$(mktemp "${runtime_dir}/chatgpt-arch-update-build.XXXXXX")
+start_progress
+if "${installer}" --build-only >"${build_log}" 2>&1; then
+  build_succeeded=yes
+else
+  build_succeeded=no
 fi
+stop_progress
+build_output=$(cat "${build_log}")
+rm -f -- "${build_log}"
+build_log=''
 
-if ! build_output=$("${installer}" --build-only 2>&1); then
+if [ "${build_succeeded}" != yes ]; then
   show_error 'The ChatGPT update package could not be prepared.' "${build_output}"
   launch_chatgpt "$@"
 fi
@@ -140,7 +205,7 @@ if [ ! -f "${package}" ]; then
 fi
 
 if ! command -v pkexec >/dev/null 2>&1 ||
-  ! pkexec /usr/bin/pacman -U --needed "${package}"; then
+  ! pkexec /usr/bin/pacman -U --needed --noconfirm "${package}"; then
   show_error 'The ChatGPT update was not installed.' \
     'Authentication may have been cancelled, or pacman reported an error.'
   launch_chatgpt "$@"

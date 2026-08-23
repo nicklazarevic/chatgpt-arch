@@ -35,8 +35,9 @@ Nothing runs in the background. Every launch through the desktop entry or the
 `chatgpt` command checks OpenAI's signed repository. When an update exists, a
 dialog shows the installed and available versions:
 
-- **Update** downloads, verifies, builds, and installs the new package, then
-  removes the downloaded build artifacts and opens ChatGPT.
+- **Update** shows a progress window while it downloads, verifies, and builds
+  the new package. It then asks for authorization, installs the package,
+  removes the downloaded build artifacts, and opens ChatGPT.
 - **Later** opens the currently installed ChatGPT immediately.
 
 If the check cannot be completed, for example while offline, ChatGPT opens
