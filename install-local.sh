@@ -233,6 +233,12 @@ if [ "${mode}" = '--build-only' ]; then
   exit 0
 fi
 
+voice_dry_run="${HOME}/.local/share/chatgpt-voice-overlay/dry-run-candidate.sh"
+phase 'Checking the voice overlay against this update...'
+if [ ! -x "${voice_dry_run}" ] || ! CHATGPT_UPDATE_NOTIFY=1 "${voice_dry_run}" "${package}"; then
+  fail 'ChatGPT was not updated. The current version was left in place so its settings stay'
+fi
+
 phase 'Installing the ChatGPT update...'
 if [ "$(id -u)" -eq 0 ]; then
   pacman -U --needed "${package}"

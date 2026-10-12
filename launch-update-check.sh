@@ -121,6 +121,11 @@ start_progress() {
 launch_chatgpt() {
   cleanup
   trap - EXIT HUP INT TERM
+  # The voice overlay launcher sets this so it can rebuild against the
+  # installed app after an update, then start ChatGPT itself.
+  if [ "${CHATGPT_UPDATE_EXIT_AFTER_INSTALL:-0}" = 1 ]; then
+    exit 0
+  fi
   exec "${official_launcher}" "$@"
 }
 
@@ -185,15 +190,15 @@ ask_to_update() {
 }
 
 [ -x "${official_launcher}" ] || exit 127
-[ -x "${installer}" ] || exec "${official_launcher}" "$@"
-command -v flock >/dev/null 2>&1 || exec "${official_launcher}" "$@"
-command -v timeout >/dev/null 2>&1 || exec "${official_launcher}" "$@"
+[ -x "${installer}" ] || launch_chatgpt "$@"
+command -v flock >/dev/null 2>&1 || launch_chatgpt "$@"
+command -v timeout >/dev/null 2>&1 || launch_chatgpt "$@"
 
 # A second launch must never wait behind an update dialog or build. It opens
 # the currently installed application immediately.
 exec 9>"${lock_file}"
 if ! flock -n 9; then
-  exec "${official_launcher}" "$@"
+  launch_chatgpt "$@"
 fi
 lock_held=yes
 trap cleanup EXIT
@@ -268,6 +273,12 @@ fi
 
 if ! command -v pkexec >/dev/null 2>&1; then
   show_error 'The update requires pkexec. Install the polkit package and try again.'
+  launch_chatgpt "$@"
+fi
+voice_dry_run="${HOME}/.local/share/chatgpt-voice-overlay/dry-run-candidate.sh"
+printf '%s\n' 'Checking the voice overlay against this update...' > "${operation_dir}/phase"
+if [ ! -x "${voice_dry_run}" ] || ! CHATGPT_UPDATE_NOTIFY=1 "${voice_dry_run}" "${package}" >>"${build_log}" 2>&1; then
+  show_error 'ChatGPT was not updated. The current version was left in place so its settings stay. The desktop notification names the reason.'
   launch_chatgpt "$@"
 fi
 printf '%s\n' 'Installing the ChatGPT update...' > "${operation_dir}/phase"
