@@ -12,7 +12,7 @@ and run the installer as your regular user:
 
 ```sh
 sudo pacman -S --needed base-devel git curl gnupg
-git clone https://github.com/Darayavaush-84/chatgpt-arch.git
+git clone https://github.com/nicklazarevic/chatgpt-arch.git
 cd chatgpt-arch
 ./install-local.sh
 ```
@@ -58,6 +58,30 @@ To skip the check once:
 ```sh
 CHATGPT_SKIP_UPDATE_CHECK=1 chatgpt
 ```
+
+### Launch the clean installed app
+
+If you use a separate Voice overlay, its mount namespace can make the installed
+archive appear to be the overlay to commands run inside the app. The host's
+installed archive is a separate file.
+
+From this checkout, verify the host archive without launching anything:
+
+```sh
+./launch-clean.sh --check
+```
+
+To use the clean installed app, quit all ChatGPT windows, then run:
+
+```sh
+./launch-clean.sh
+```
+
+The helper starts ChatGPT through the systemd user service manager, outside any
+inherited overlay mount, and skips the update check. It refuses to launch while
+ChatGPT is running because an existing process would reuse the overlay session.
+It does not change your Voice profile, application settings, desktop entry, or
+overlay files. The installed app's normal settings still apply.
 
 From the cloned repository:
 
